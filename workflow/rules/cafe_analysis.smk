@@ -121,14 +121,21 @@ rule cafe5_complete_set:
         "../envs/expansion.yaml"
     shell:
         """
-        cafe5 --cores 64 -i {input.table} -t {input.tree} -o {output} -k 3 -l {params.lambda_value} -P 0.05;
-        if ! [ -s {output}/Gamma_family_results.txt ]; then
-          echo "Will create dummy file with p=0.999 for current hypothesis"
-          ls -1 tea/{params.hypothesis}/expansion_cp_target_OGs/ |\
-            sed 's/.txt//' |\
-            awk '{{print $1,$2=0.999}}' OFS="\\t" |\
-            sed '1i#FamilyID\tpvalue' > {output}/Gamma_family_results.txt
-        else
-          echo "CAFE results computed"
-        fi
+#        cafe5 --cores 64 -i {input.table} -t {input.tree} -o {output} -k 3 -l {params.lambda_value} -P 0.05;
+#        if [ -s {output}/Gamma_family_results.txt ]; then
+#          echo "dummy file already exists from manual creation after non-zero exit (because could not find lambda value that fits the large HOGs with far related species)."
+#        else
+#          cafe5 --cores 64 -i {input.table} -t {input.tree} -o {output} -k 3 -l {params.lambda_value} -P 0.05
+#        fi
+#now check again if CAFE produced the file
+#        if ! [ -s {output}/Gamma_family_results.txt ]; then
+        echo "Will create dummy file with p=0.999 for current hypothesis"
+        mkdir {output}
+        ls -1 tea/{params.hypothesis}/expansion_cp_target_OGs/ |\
+        sed 's/.txt//' |\
+        awk '{{print $1,$2=0.999}}' OFS="\\t" |\
+        sed '1i#FamilyID\tpvalue' > {output}/Gamma_family_results.txt
+#        else
+#          echo "CAFE results computed"
+#        fi
         """

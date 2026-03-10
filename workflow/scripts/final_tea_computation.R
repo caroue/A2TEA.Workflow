@@ -305,12 +305,21 @@ for (hypothesis in hypotheses$hypothesis) {
         add_OG_analysis[[exp_OG]]@add_OG_analysis[[set]]@msa <- readAAStringSet(paste0("tea/", hypothesis, "/add_OGs_sets/muscle/", exp_OG, "/add_OGs_set_num-", set, ".afa.add"))
                
         #adding tree info
-        add_OG_analysis[[exp_OG]]@add_OG_analysis[[set]]@tree <- read.tree(paste0("tea/", hypothesis, "/add_OGs_sets/trees/", exp_OG, "/add_OGs_set_num-", set, ".tree.add"))
+#        add_OG_analysis[[exp_OG]]@add_OG_analysis[[set]]@tree <- read.tree(paste0("tea/", hypothesis, "/add_OGs_sets/trees/", exp_OG, "/add_OGs_set_num-", set, ".tree.add"))
 
+#      }
+        tree_file <- paste0("tea/", hypothesis, "/add_OGs_sets/trees/", exp_OG, "/add_OGs_set_num-", set, ".tree.add")
+        if (file.size(tree_file) > 0) {
+          add_OG_analysis[[exp_OG]]@add_OG_analysis[[set]]@tree <- read.tree(tree_file)
+        } else if (set > 1) {
+          add_OG_analysis[[exp_OG]]@add_OG_analysis[[set]]@tree <- add_OG_analysis[[exp_OG]]@add_OG_analysis[[set - 1]]@tree
+        } else {
+          stop(paste("Error: Tree file for set 1 is empty:", tree_file))
+        }
       }
+    }
       #to not run into "too many open connections" problem
       closeAllConnections()
-    }
 
 
     # create empty list object for hypothesis
@@ -399,15 +408,34 @@ for (hypothesis in hypotheses$hypothesis) {
     n_sets <- length(HYPOTHESES.a2tea[[hypothesis]]@expanded_OGs[[og]]@add_OG_analysis)
       
     for (set in 1:n_sets) {
-        
-      A2TEA.fa.seqs <- c(A2TEA.fa.seqs, read.fasta(paste0("tea/", 
-                                hypothesis, 
-                                "/add_OGs_sets/fa_records/", 
-                                og,
-                                "/add_OGs_set_num-", set, ".fa.add"), 
-                         seqtype = "AA", 
-                         as.string = TRUE))
 
+      fasta_file <- paste0("tea/",
+                           hypothesis,
+                           "/add_OGs_sets/fa_records/", 
+                           og,
+                           "/add_OGs_set_num-", set, ".fa.add")
+# check if file is not empty      
+      if (file.size(fasta_file) > 0) {             # <<< CHANGE
+        # file not empty → use directly
+        A2TEA.fa.seqs <- c(A2TEA.fa.seqs, 
+                           read.fasta(fasta_file, seqtype = "AA", as.string = TRUE))
+      } else {                                     # <<< CHANGE
+        # file empty → look backwards until non-empty
+        prev_set <- set - 1
+        while (prev_set >= 1) {
+          prev_file <- paste0("tea/", 
+                              hypothesis, 
+                              "/add_OGs_sets/fa_records/", 
+                              og,
+                              "/add_OGs_set_num-", prev_set, ".fa.add")
+          if (file.size(prev_file) > 0) {
+            A2TEA.fa.seqs <- c(A2TEA.fa.seqs, 
+                               read.fasta(prev_file, seqtype = "AA", as.string = TRUE))
+            break
+          }
+          prev_set <- prev_set - 1
+        }
+      }
     }
     #to not run into "too many open connections" problem
     closeAllConnections()
